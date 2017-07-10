@@ -9,8 +9,8 @@ links:
     - auto: false
       min: 0
       max: 257
-      role: ardb
-      argname: ardbs
+      role: storage_engine
+      argname: storageEngines
 
     - auto: false
       min: 0

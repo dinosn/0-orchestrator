@@ -254,6 +254,9 @@ response = cls.get_access_token(<client id>, <client secret>, scopes=['user:memb
 print(response.content)
 ```
 
+> If you going to generate the JWT token using other means, make sure you set the validity of the token to maximum of 1 hour (3600 seconds)
+other wise the api will reject the token (440) due to having very long expiration date. This is make sure
+users that has been taken out of itsyou.online organization loses their access as fast as possible.
 
 To use the token from the previous steps in the http requests it is passed as follows:
 Using the header,

@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"strings"
 
+	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	jwt "github.com/dgrijalva/jwt-go"
+	"time"
 )
 
 // Oauth2itsyouonlineMiddleware is oauth2 middleware for itsyouonline
@@ -31,6 +33,8 @@ MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAES5X8XrfKdx9gYayFITc89wad4usrk0n2
 7MjiGYvqalizeSWTHEpnd7oea9IQ8T5oJjMVH5cc0H5tFSKilFFeh//wngxIyny6
 6+Vq5t5B0V0Ehy01+2ceEon2Y0XDkIKv
 -----END PUBLIC KEY-----`
+
+	maxJWTDuration int64 = 3600 //1 hour
 )
 
 func init() {
@@ -93,7 +97,7 @@ func (om *Oauth2itsyouonlineMiddleware) Handler(next http.Handler) http.Handler 
 
 		var claim jwt.MapClaims
 		if len(oauth2ServerPublicKey) > 0 {
-			claim, err = om.checkJWTClaim(accessToken)
+			claim, err = om.getJWTClaim(accessToken)
 			if err != nil {
 				validationerror, ok := err.(*jwt.ValidationError)
 				if ok {
@@ -121,8 +125,34 @@ func (om *Oauth2itsyouonlineMiddleware) Handler(next http.Handler) http.Handler 
 	})
 }
 
-// check JWT token and get it's scopes
-func (om *Oauth2itsyouonlineMiddleware) checkJWTClaim(tokenStr string) (jwt.MapClaims, error) {
+//validate that the expiration date of a token is not too long
+func (om *Oauth2itsyouonlineMiddleware) validExpiration(claims jwt.MapClaims) error {
+	now := time.Now().Unix()
+	if !claims.VerifyExpiresAt(now, true) {
+		//we call the verify expires at with required=True to make sure that
+		//the exp flag is set.
+		return fmt.Errorf("JWT token expired")
+	}
+
+	exp := claims["exp"]
+
+	var ts int64
+	switch exp := exp.(type) {
+	case float64:
+		ts = int64(exp)
+	case json.Number:
+		ts, _ = exp.Int64()
+	}
+
+	if ts-now > maxJWTDuration {
+		return fmt.Errorf("JWT token expiration exceeds max allowed expiration of %v", time.Duration(maxJWTDuration)*time.Second)
+	}
+
+	return nil
+}
+
+// gets a valid jwt claims, otherwise return an error
+func (om *Oauth2itsyouonlineMiddleware) getJWTClaim(tokenStr string) (jwt.MapClaims, error) {
 	jwtStr := strings.TrimSpace(strings.TrimPrefix(tokenStr, "Bearer"))
 	token, err := jwt.Parse(jwtStr, func(token *jwt.Token) (interface{}, error) {
 		if token.Method != jwt.SigningMethodES384 {
@@ -130,6 +160,7 @@ func (om *Oauth2itsyouonlineMiddleware) checkJWTClaim(tokenStr string) (jwt.MapC
 		}
 		return JWTPublicKey, nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -138,5 +169,10 @@ func (om *Oauth2itsyouonlineMiddleware) checkJWTClaim(tokenStr string) (jwt.MapC
 	if !ok {
 		return nil, fmt.Errorf("Invalid claims")
 	}
+
+	if err := om.validExpiration(claims); err != nil {
+		return nil, err
+	}
+
 	return claims, nil
 }

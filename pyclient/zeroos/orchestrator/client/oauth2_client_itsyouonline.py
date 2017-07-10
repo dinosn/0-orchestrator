@@ -8,8 +8,10 @@ class Oauth2ClientItsyouonline():
         params = {
             'grant_type': 'client_credentials',
             'client_id': client_id,
-            'client_secret': client_secret
+            'client_secret': client_secret,
+            'validity': 3600,
         }
+
         if len(scopes) > 0:
             params['scope'] = ",".join(scopes)
         if len(audiences) > 0:

@@ -13,7 +13,7 @@ Next to the the Zero-OS nodes, a Zero-OS cluster includes the following componen
 
 Both the **Zero-OS Orchestrator**, the **AYS Server** and the **iPXE Server** run in a container on one of the Zero-OS nodes, or on any other local or remote host, connected to the same ZeroTier network as the other Zero-OS nodes in the cluster.
 
-In addition a Zero-OS cluster typically hosts (as a workload) one or more **Storage Clusters**, implemented as clusters of (ARDB) key-value stores running in containers hosted on the Zero-OS nodes. In the above picture two storage clusters are shown:
+In addition a Zero-OS cluster typically hosts (as a workload) one or more **Storage Clusters**, implemented as clusters of (StorageEngine) key-value stores running in containers hosted on the Zero-OS nodes. In the above picture two storage clusters are shown:
 - One for implementing a block storage backend, exposed through NBD servers, one for each each virtual machine using virtual disks from the block storage backend
 - Another one implementing the backend for the TLOG server, needed by the NBD servers
 

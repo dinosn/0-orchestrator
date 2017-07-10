@@ -48,7 +48,7 @@ type NodesInterface interface { // DeleteBridge is the handler for DELETE /nodes
 	GetContainerJob(http.ResponseWriter, *http.Request)
 	// SendSignalToJob is the handler for POST /nodes/{nodeid}/containers/{containername}/jobs/{jobid}
 	// Send signal to the job
-	// !!!!!SendSignalToJob(http.ResponseWriter, *http.Request)
+	SendSignalJob(http.ResponseWriter, *http.Request)
 	// KillAllContainerJobs is the handler for DELETE /nodes/{nodeid}/containers/{containername}/jobs
 	// Kill all running jobs on the container
 	KillAllContainerJobs(http.ResponseWriter, *http.Request)
@@ -75,7 +75,7 @@ type NodesInterface interface { // DeleteBridge is the handler for DELETE /nodes
 	GetContainerProcess(http.ResponseWriter, *http.Request)
 	// SendSignalToProcess is the handler for POST /nodes/{nodeid}/containers/{containername}/processes/{processid}
 	// Send signal to the process
-	// !!!!!SendSignalToProcess(http.ResponseWriter, *http.Request)
+	SendSignalProcess(http.ResponseWriter, *http.Request)
 	// ListContainerProcesses is the handler for GET /nodes/{nodeid}/containers/{containername}/processes
 	// Get running processes in this container
 	ListContainerProcesses(http.ResponseWriter, *http.Request)
@@ -337,7 +337,7 @@ func NodesInterfaceRoutes(r *mux.Router, i NodesInterface, org string) {
 	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/info", i.GetContainerOSInfo).Methods("GET")
 	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/jobs/{jobid}", i.KillContainerJob).Methods("DELETE")
 	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/jobs/{jobid}", i.GetContainerJob).Methods("GET")
-	// r.HandleFunc("/nodes/{nodeid}/containers/{containername}/jobs/{jobid}", i.SendSignalToJob).Methods("POST")
+	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/jobs/{jobid}", i.SendSignalJob).Methods("POST")
 	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/jobs", i.KillAllContainerJobs).Methods("DELETE")
 	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/jobs", i.ListContainerJobs).Methods("GET")
 	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/jobs", i.StartContainerJob).Methods("POST")
@@ -346,7 +346,7 @@ func NodesInterfaceRoutes(r *mux.Router, i NodesInterface, org string) {
 	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/ping", i.PingContainer).Methods("POST")
 	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/processes/{processid}", i.KillContainerProcess).Methods("DELETE")
 	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/processes/{processid}", i.GetContainerProcess).Methods("GET")
-	// r.HandleFunc("/nodes/{nodeid}/containers/{containername}/processes/{processid}", i.SendSignalToProcess).Methods("POST")
+	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/processes/{processid}", i.SendSignalProcess).Methods("POST")
 	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/processes", i.ListContainerProcesses).Methods("GET")
 	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/start", i.StartContainer).Methods("POST")
 	r.HandleFunc("/nodes/{nodeid}/containers/{containername}/state", i.GetContainerState).Methods("GET")

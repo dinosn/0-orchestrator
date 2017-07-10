@@ -109,7 +109,7 @@ def processChange(job):
     from zeroos.orchestrator.configuration import get_jwt_token_from_job
 
     service = job.service
-    if service.model.actionsState['install'] in ['new', 'schedules']:
+    if service.model.actionsState['install'] in ['new', 'scheduled']:
         return
     args = job.model.args
     category = args.pop('changeCategory')

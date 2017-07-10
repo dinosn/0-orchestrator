@@ -84,7 +84,7 @@ if ! zerotier-cli  listnetworks  | grep ${ZEROTIERNWID} | egrep -q 'OK PRIVATE|O
     echo "[-] Make sure you authorized this docker into your ZeroTier network"
     echo "[-] ZeroTier Network ID: ${ZEROTIERNWID}"
 
-    while ! zerotier-cli listnetworks | egrep -q 'OK PRIVATE|OK PUBLIC'; do
+    while ! zerotier-cli listnetworks | grep ${ZEROTIERNWID} | egrep -q 'OK PRIVATE|OK PUBLIC'; do
         sleep 0.2
     done
 fi
@@ -142,6 +142,20 @@ echo '#!/bin/bash -x' > ${aysinit}
 echo 'ays start > /dev/null 2>&1' >> ${aysinit}
 
 chmod +x ${aysinit} >> ${logfile} 2>&1
+
+if [ ! -d /optvar/cockpit_repos/orchestrator-server ]; then
+    mkdir -p /optvar/cockpit_repos/orchestrator-server >> ${logfile} 2>&1
+    pushd /optvar/cockpit_repos/orchestrator-server
+    mkdir services >> ${logfile} 2>&1
+    mkdir actorTemplates >> ${logfile} 2>&1
+    mkdir actors >> ${logfile} 2>&1
+    mkdir blueprints >> ${logfile} 2>&1
+    touch .ays >> ${logfile} 2>&1
+    git init >> ${logfile} 2>&1
+    git remote add origin /dev/null >> ${logfile} 2>&1
+    popd
+fi
+
 bash $aysinit >> ${logfile} 2>&1
 
 echo "[+] Waiting for AtYourService"
@@ -159,18 +173,6 @@ cd /opt/jumpscale9/go/proj/src/github.com/zero-os/0-orchestrator/api
 go get -u github.com/jteeuwen/go-bindata/... >> ${logfile} 2>&1
 go generate >> ${logfile} 2>&1
 go build -o /usr/local/bin/orchestratorapiserver >> ${logfile} 2>&1
-if [ ! -d /optvar/cockpit_repos/orchestrator-server ]; then
-    mkdir -p /optvar/cockpit_repos/orchestrator-server >> ${logfile} 2>&1
-    pushd /optvar/cockpit_repos/orchestrator-server
-    mkdir services >> ${logfile} 2>&1
-    mkdir actorTemplates >> ${logfile} 2>&1
-    mkdir actors >> ${logfile} 2>&1
-    mkdir blueprints >> ${logfile} 2>&1
-    touch .ays >> ${logfile} 2>&1
-    git init >> ${logfile} 2>&1
-    git remote add origin https://github.com/zero-os/orchestrator >> ${logfile} 2>&1
-    popd
-fi
 
 echo "[+] Starting orchestrator api server"
 orchinit="/etc/my_init.d/11_orchestrator.sh"
@@ -231,10 +233,5 @@ echo -e "bootstrap.zero-os__grid1:\n  zerotierNetID: '"${ZEROTIERNWID}"'\n  zero
 
 echo "Your ays server is nearly ready to bootstrap nodes into your zerotier network."
 echo "Create a JWT token from the AYS CLI and execute the bootstrap blueprint in your AYS repository located at '/optvar/cockpit_repos/orchestrator-server'"
-echo "Once done, you can start deploying nodes"
-if [ -z "${ITSYOUONLINEORG}" ]; then
-    echo "Download your ipxe boot iso image https://bootstrap.gig.tech/iso/${BRANCH}/${ZEROTIERNWID}/ and boot up your nodes!"
-else
-    echo "Download your ipxe boot iso image https://bootstrap.gig.tech/iso/${BRANCH}/${ZEROTIERNWID}/organization=${ITSYOUONLINEORG} and boot up your nodes!"
-fi
+echo "Please continue instructions at https://github.com/zero-os/0-orchestrator/tree/master/docs/setup#setup-the-ays-configuration-service"
 echo "Enjoy your orchestrator api server: $PUB"

@@ -21,7 +21,7 @@ type ContainerCreateAguments struct {
 	Nics        []Nic             `json:"nics"`         //network setup (only respected if HostNetwork is false)
 	Port        map[int]int       `json:"port"`         //port forwards (only if default networking is enabled)
 	Hostname    string            `json:"hostname"`     //hostname
-	Storage     string            `json:"storage"`      //ardb storage needed for g8ufs mounts.
+	Storage     string            `json:"storage"`      //StorageEngine storage needed for g8ufs mounts.
 	Tags        []string          `json:"tags"`         //for searching containers
 }
 

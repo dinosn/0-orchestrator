@@ -1,0 +1,12 @@
+links:
+  parent:
+    optional: false
+    auto: false
+    role: node
+    argname: node
+  consume:
+    - auto: false
+      min: 0
+      max: 1
+      role: container
+      argname: container

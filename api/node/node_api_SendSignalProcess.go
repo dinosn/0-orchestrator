@@ -51,7 +51,7 @@ func (api NodeAPI) SendSignalProcess(w http.ResponseWriter, r *http.Request) {
 	// Send signal to the container process
 	core := client.Core(cl)
 	if err := core.KillProcess(processId, syscall.Signal(reqBody.Signal)); err != nil {
-		errmsg := fmt.Sprintf("Failed to kill process %s", processId)
+		errmsg := fmt.Sprintf("Error sending signal %s to process %s", reqBody.Signal, processId)
 		tools.WriteError(w, http.StatusInternalServerError, err, errmsg)
 		return
 	}

@@ -41,7 +41,7 @@ func (api NodeAPI) SendSignalJob(w http.ResponseWriter, r *http.Request) {
 
 	// Send signal to the container
 	if err := core.KillJob(client.JobId(jobId), syscall.Signal(reqBody.Signal)); err != nil {
-		errmsg := fmt.Sprintf("Error killing job %s on container ", jobId)
+		errmsg := fmt.Sprintf("Error sending signal %s to job %s on container", reqBody.Signal, jobId)
 		tools.WriteError(w, http.StatusInternalServerError, err, errmsg)
 		return
 	}

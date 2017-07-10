@@ -6,8 +6,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class ARDB:
-    """ardb server"""
+class StorageEngine:
+    """storageEngine server"""
 
     def __init__(self, name, container, bind='0.0.0.0:16379', data_dir='/mnt/data', master=None):
         """
@@ -24,13 +24,13 @@ class ARDB:
 
     @classmethod
     def from_ays(cls, service, password=None):
-        logger.debug("create ardb from service (%s)", service)
+        logger.debug("create storageEngine from service (%s)", service)
         from .Container import Container
 
         container = Container.from_ays(service.parent, password)
         if service.model.data.master != '':
-            master_service = service.aysrepo.serviceGet('ardb', service.model.data.master)
-            master = ARDB.from_ays(master_service, password)
+            master_service = service.aysrepo.serviceGet('storage_engine', service.model.data.master)
+            master = StorageEngine.from_ays(master_service, password)
         else:
             master = None
 
@@ -43,7 +43,7 @@ class ARDB:
         )
 
     def _configure(self):
-        logger.debug("configure ardb")
+        logger.debug("configure storageEngine")
         buff = io.BytesIO()
         self.container.client.filesystem.download('/etc/ardb.conf', buff)
         content = buff.getvalue().decode()
@@ -72,10 +72,9 @@ class ARDB:
         logger.debug('start %s', self)
 
         self._configure()
-        self.container.node.client.nft.open_port(self.port)
         self.container.client.system('/bin/ardb-server /etc/ardb.conf.used')
 
-        # wait for ardb to start
+        # wait for storageEngine to start
         start = time.time()
         end = start + timeout
         is_running, _ = self.is_running()
@@ -98,7 +97,7 @@ class ARDB:
 
         self.container.client.job.kill(job['cmd']['id'])
 
-        # wait for ardb to stop
+        # wait for StorageEngine to stop
         start = time.time()
         end = start + timeout
         is_running, _ = self.is_running()
@@ -108,7 +107,6 @@ class ARDB:
 
         if is_running:
             raise RuntimeError("storage server {} didn't stopped")
-        self.container.node.client.nft.drop_port(self.port)
 
     def is_running(self):
         try:
@@ -125,12 +123,12 @@ class ARDB:
     @property
     def ays(self):
         if self._ays is None:
-            from JumpScale.sal.g8os.atyourservice.StorageCluster import ARDBAys
-            self._ays = ARDBAys(self)
+            from JumpScale.sal.g8os.atyourservice.StorageCluster import storageEngineAys
+            self._ays = storageEngineAys(self)
         return self._ays
 
     def __str__(self):
-        return "ARDB <{}>".format(self.name)
+        return "storageEngine <{}>".format(self.name)
 
     def __repr__(self):
         return str(self)

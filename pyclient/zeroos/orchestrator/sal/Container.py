@@ -158,10 +158,7 @@ class Container:
             storage=self.storage,
         )
 
-        result = job.get(timeout)
-        if result.state != 'SUCCESS':
-            raise RuntimeError('failed to create container %s' % result.data)
-        containerid = json.loads(result.data)
+        containerid = job.get(timeout)
         self._client = self.node.client.container.client(containerid)
 
     def start(self):

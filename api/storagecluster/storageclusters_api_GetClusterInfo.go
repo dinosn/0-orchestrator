@@ -10,17 +10,17 @@ import (
 	"github.com/zero-os/0-orchestrator/api/tools"
 )
 
-// Ardb Struct that is used to map ardb service.
-type Ardb struct {
+// StorageEngine Struct that is used to map storageEngine service.
+type StorageEngine struct {
 	HomeDir   string `json:"homeDir" validate:"nonzero"`
 	Bind      string `json:"bind" validate:"nonzero"`
 	Master    string `json:"master,omitempty"`
 	Container string `json:"container" validate:"nonzero"`
 }
 
-func getArdb(aysClient tools.AYStool, name string, api StorageclustersAPI, w http.ResponseWriter) (StorageServer, []string, error) {
+func getStorageEngine(aysClient tools.AYStool, name string, api StorageclustersAPI, w http.ResponseWriter) (StorageServer, []string, error) {
 	var state EnumStorageServerStatus
-	service, res, err := aysClient.Ays.GetServiceByName(name, "ardb", api.AysRepo, nil, nil)
+	service, res, err := aysClient.Ays.GetServiceByName(name, "storage_engine", api.AysRepo, nil, nil)
 	if !tools.HandleAYSResponse(err, res, w, "Getting container service") {
 		return StorageServer{}, []string{""}, err
 	}
@@ -32,17 +32,17 @@ func getArdb(aysClient tools.AYStool, name string, api StorageclustersAPI, w htt
 
 	nameInfo := strings.Split(service.Name, "_") // parsing string name from cluster<cid>_<data or metadata>_<id>
 	id, err := strconv.Atoi(nameInfo[len(nameInfo)-1])
-	ardb := Ardb{} // since the storage server type is different from the service schema cannot map it to service so need to create custom struct
-	if err := json.Unmarshal(service.Data, &ardb); err != nil {
+	storageEngine := StorageEngine{} // since the storage server type is different from the service schema cannot map it to service so need to create custom struct
+	if err := json.Unmarshal(service.Data, &storageEngine); err != nil {
 		return StorageServer{}, []string{""}, err
 	}
-	bind := strings.Split(ardb.Bind, ":")
+	bind := strings.Split(storageEngine.Bind, ":")
 	port, err := strconv.Atoi(bind[1])
 	if err != nil {
 		return StorageServer{}, []string{""}, err
 	}
 	storageServer := StorageServer{
-		Container: ardb.Container,
+		Container: storageEngine.Container,
 		ID:        id,
 		IP:        bind[0],
 		Port:      port,
@@ -68,14 +68,14 @@ func (api StorageclustersAPI) GetClusterInfo(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	clusterItem := struct {
-		Label       string               `json:"label" validate:"nonzero"`
-		Status      EnumClusterStatus    `json:"status" validate:"nonzero"`
-		NrServer    uint32               `json:"nrServer" validate:"nonzero"`
-		HasSlave    bool                 `json:"hasSlave" validate:"nonzero"`
-		DiskType    EnumClusterDriveType `json:"diskType" validate:"nonzero"`
-		Filesystems []string             `json:"filesystems" validate:"nonzero"`
-		Ardbs       []string             `json:"ardbs" validate:"nonzero"`
-		Nodes       []string             `json:"nodes" validate:"nonzero"`
+		Label          string               `json:"label" validate:"nonzero"`
+		Status         EnumClusterStatus    `json:"status" validate:"nonzero"`
+		NrServer       uint32               `json:"nrServer" validate:"nonzero"`
+		HasSlave       bool                 `json:"hasSlave" validate:"nonzero"`
+		DiskType       EnumClusterDriveType `json:"diskType" validate:"nonzero"`
+		Filesystems    []string             `json:"filesystems" validate:"nonzero"`
+		StorageEngines []string             `json:"storageEngines" validate:"nonzero"`
+		Nodes          []string             `json:"nodes" validate:"nonzero"`
 	}{}
 
 	if err := json.Unmarshal(service.Data, &clusterItem); err != nil {
@@ -83,12 +83,12 @@ func (api StorageclustersAPI) GetClusterInfo(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	//looping over all ardb disks relating to this cluster
-	for _, ardbName := range clusterItem.Ardbs {
-		//getting all ardb disk services relating to this cluster to get more info on each ardb
-		storageServer, nameInfo, err := getArdb(aysClient, ardbName, api, w)
+	//looping over all storageEngine disks relating to this cluster
+	for _, storageEngineName := range clusterItem.StorageEngines {
+		//getting all storageEngine disk services relating to this cluster to get more info on each storageEngine
+		storageServer, nameInfo, err := getStorageEngine(aysClient, storageEngineName, api, w)
 		if err != nil {
-			tools.WriteError(w, http.StatusInternalServerError, err, "Error getting ardb service")
+			tools.WriteError(w, http.StatusInternalServerError, err, "Error getting storageEngine service")
 			return
 		}
 

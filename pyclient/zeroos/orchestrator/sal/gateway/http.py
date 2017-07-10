@@ -1,4 +1,4 @@
-from . import templates
+from zeroos.orchestrator.sal import templates
 import signal
 import time
 

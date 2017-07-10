@@ -1,0 +1,17 @@
+links:
+  parent:
+    optional: false
+    auto: false
+    role: node
+    argname: node
+  consume:
+    - auto: false
+      min: 0
+      max: 1
+      role: influxdb
+      argname: influxdb
+    - auto: false
+      min: 0
+      max: 1
+      role: grafana
+      argname: grafana

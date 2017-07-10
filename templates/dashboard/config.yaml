@@ -1,0 +1,6 @@
+links:
+  parent:
+    optional: false
+    auto: false
+    role: grafana
+    argname: grafana

@@ -8,7 +8,6 @@ def install(job):
 
     service = job.service
     service.model.data.status = 'halted'
-
     if service.model.data.templateVdisk:
         template = urlparse(service.model.data.templateVdisk)
         targetconfig = get_cluster_config(job)
@@ -17,7 +16,7 @@ def install(job):
 
         volume_container = create_from_template_container(job, target_node)
         try:
-            srcardb = get_srcardb(volume_container, template)
+            srcstorageEngine = get_srcstorageEngine(volume_container, template)
             configpath = "/config.yml"
             disktype = "cache" if str(service.model.data.type) == "tmp" else str(service.model.data.type)
             config = {
@@ -25,10 +24,10 @@ def install(job):
                     storagecluster: targetconfig['config'],
                     "srccluster": {
                         "metadataStorage": {
-                            "address": srcardb
+                            "address": srcstorageEngine
                         },
                         "dataStorage": [
-                            {"address": srcardb},
+                            {"address": srcstorageEngine},
                         ],
                     },
                 },
@@ -95,7 +94,7 @@ def delete(job):
         container.stop()
 
 
-def get_srcardb(container, template):
+def get_srcstorageEngine(container, template):
     from urllib.parse import urlparse
 
     if template.scheme in ('', 'ardb'):

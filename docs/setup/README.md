@@ -5,9 +5,11 @@ This is the recommended and currently the only supported option to setup a Zero-
 In order to have a full Zero-OS cluster you'll need to perform the following steps:
 1. [Create a JumpScale9 Docker container](#create-a-jumpscale9-docker-container)
 2. [Install the Zero-OS Orchestrator into the Docker container](#install-the-orchestrator)
-3. [Setup the AYS configuration service](#setup-the-ays-configuration-service)
+3. [Setup the AYS Configuration service](#setup-the-ays-configuration-service)
 4. [Setup the backplane network](#setup-the-backplane-network)
-5. [Boot your Zero-OS nodes](#boot-your-zero-os-nodes)
+5. [Setup the AYS Bootstrap service](#setup-the-bootstrap-service)
+6. [Boot your Zero-OS nodes](#boot-your-zero-os-nodes)
+7. [Setup Statistics Monitoring](#setup-statistics-monitoring)
 
 ## Create a JumpScale9 Docker container
 
@@ -41,7 +43,7 @@ export ZEROTIERTOKEN="<Your ZeroTier token>"
 export ITSYOUONLINEORG="<itsyou.online organization>"
 export DOMAIN="<Your domain name>"
 curl -o install-orchestrator.sh https://raw.githubusercontent.com/zero-os/0-orchestrator/${BRANCH}/scripts/install-orchestrator.sh
-bash install-orchestrator.sh $BRANCH $ZEROTIERNWID $ZEROTIERTOKEN $ITSYOUONLINEORG [$DOMAIN [--development]]
+bash install-orchestrator.sh "$BRANCH" "$ZEROTIERNWID" "$ZEROTIERTOKEN" "$ITSYOUONLINEORG" ["$DOMAIN" [--development]]
 ```
 
 In order to see the full log details while `install-orchestrator.sh` executes:
@@ -60,9 +62,9 @@ tail -f /tmp/install.log
 Since AYS is protected with JWT, you have to generate a token so the AYS CLI can authenticate to AYS server.
 The CLI provide and easy way to do it:
 ```shell
-ays generatetoken --clientid {CLIENT_ID} --clientsecret {CLIENT_SECRET} --organization $ITSYOUONLINEORG
+ays generatetoken --clientid {CLIENT_ID} --clientsecret {CLIENT_SECRET} --organization "$ITSYOUONLINEORG" --validity 3600
 ```
-CLIENT_ID AND CLIENT_SECRET have to be generated on [Itsyou.online](https://itsyou.online)  
+CLIENT_ID AND CLIENT_SECRET have to be generated on [Itsyou.online](https://itsyou.online)
 From the website, go to your settings, in the `API Keys` panel, generate a new id/secret pair.
 
 This command will output something like:
@@ -82,17 +84,19 @@ configuration__main:
   - key: '0-core-version'
     value: 'master'
   - key: 'js-version'
-    value: '9.0.0'
+    value: '9.0.3'
   - key: 'gw-flist'
-    value: 'https://hub.gig.tech/gig-official-apps/zero-os-gw-1.1.0-alpha-3.flist'
+    value: 'https://hub.gig.tech/gig-official-apps/zero-os-gw-master.flist'
   - key: 'ovs-flist'
-    value: 'https://hub.gig.tech/gig-official-apps/ovs-1.1.0-alpha-3.flist'
+    value: 'https://hub.gig.tech/gig-official-apps/ovs.flist'
   - key: '0-disk-flist'
-    value: 'https://hub.gig.tech/gig-official-apps/0-disk-1.1.0-alpha-3.flist'
+    value: 'https://hub.gig.tech/gig-official-apps/0-disk-master.flist'
+  - key: '0-statscollector-flist'
+    value: 'https://hub.gig.tech/gig-official-apps/0-statscollector-master.flist'
   - key: 'jwt-token'
-    value: <The JWT generted at the previous step>
+    value: '<The JWT generted at the previous step>'
   - key: 'jwt-key'
-    value: 'MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAES5X8XrfKdx9gYayFITc89wad4usrk0n27MjiGYvqalizeSWTHEpnd7oea9IQ8T5oJjMVH5cc0H5tFSKilFFeh//wngxIyny66+Vq5t5B0V0Ehy01+2ceEon2Y0XDkIKv'    
+    value: 'MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAES5X8XrfKdx9gYayFITc89wad4usrk0n27MjiGYvqalizeSWTHEpnd7oea9IQ8T5oJjMVH5cc0H5tFSKilFFeh//wngxIyny66+Vq5t5B0V0Ehy01+2ceEon2Y0XDkIKv'
 ```
 
 See [Versioning](versioning.md) for more details about the AYS configuration service.
@@ -138,7 +142,11 @@ cd /optvar/cockpit_repos/orchestrator-server
 ays blueprint network.bp
 ```
 
-Then we need to update the bootstrap service so that it deploys the storage network when bootstrapping the nodes. So edit `/optvar/cockpit_repos/orchestrator-server/blueprints/bootstrap.bp` as follows:
+## Setup the Bootstrap service
+
+Then we need to update the bootstrap service so that it deploys the storage network when bootstrapping the nodes. The bootstrap service also authorizes ZeroTier join requests form Zero-OS nodes if they meet the conditions as set in the Configuration blueprint.
+
+So edit `/optvar/cockpit_repos/orchestrator-server/blueprints/bootstrap.bp` as follows:
 ```yaml
 bootstrap.zero-os__grid1:
   zerotierNetID: '<Your ZeroTier network id>'
@@ -147,6 +155,7 @@ bootstrap.zero-os__grid1:
   networks:
     - storage
 ```
+
 Now issue the following AYS commands to reinstall the updated bootstrap service:
 ```shell
 cd /optvar/cockpit_repos/orchestrator-server
@@ -158,8 +167,26 @@ ays run create -y
 ## Boot your Zero-OS nodes
 The final step of rounding up your Zero-OS cluster is to boot your Zero-OS nodes in to your ZeroTier network.
 
-Via iPXE from the following URL: `https://bootstrap.gig.tech/ipxe/master/<Your ZeroTier network id>/organization=${ITSYOUONLINEORG}`
+Via iPXE from the following URL: `https://bootstrap.gig.tech/ipxe/master/${ZEROTIERNWID}/organization="${ITSYOUONLINEORG}"`
 
-Or download your ISO from the following URL: `https://bootstrap.gig.tech/iso/master/<Your ZeroTier network id>/organization=${ITSYOUONLINEORG}`
+Or download your ISO from the following URL: `https://bootstrap.gig.tech/iso/master/${ZEROTIERNWID}/organization="${ITSYOUONLINEORG}"`
 
 Refer to the 0-core repository documentation for more information on booting Zero-OS.
+
+## Setup Statistics Monitoring
+
+To have statistics monitoring, you need need to have influxdb and graphana running on any of the nodes. And you need to run the 0-stats-collector on any node you want to monitor.
+The 0-stats-collector reads the statistics from 0-core and dumps them in influxdb, while graphana can be used to visualize the data in influxdb.
+The fastest way to achieve this is to install the service statsdb on any of the nodes. This service will install both influxdb and graphana and once installed, it will iterate all nodes and install the 0-stat-collector on them.
+
+Example of the statsdb blueprint:
+```yaml
+statsdb__statistics:
+  node: '54a9f715dbb1'
+  port: 9086
+
+actions:
+  - action: install
+
+```
+The port will be the port on which influxdb will run. Executing this blueprint will create a container with influxdb running on said port and will add database `statistics` to influxdb. It will also create a container with graphana running on it and add a datasource for `statistics` database.

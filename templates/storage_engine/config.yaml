@@ -8,7 +8,7 @@ links:
       auto: false
       max: 1
       min: 0
-      role: ardb
+      role: storage_engine
 recurring:
   - action: monitor
     log: true
