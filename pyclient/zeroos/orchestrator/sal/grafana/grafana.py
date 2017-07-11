@@ -45,10 +45,8 @@ class Grafana:
         if is_running:
             raise RuntimeError('Failed to stop grafana.')
 
-        try:
+        if self.container.node.client.nft.rule_exists(self.port):
             self.container.node.client.nft.drop_port(self.port)
-        except RuntimeError:
-            pass
 
     def start(self, timeout=30):
         is_running, _ = self.is_running()
@@ -57,10 +55,8 @@ class Grafana:
 
         self.apply_config()
 
-        try:
+        if not self.container.node.client.nft.rule_exists(self.port):
             self.container.node.client.nft.open_port(self.port)
-        except RuntimeError:
-            pass
 
         self.container.client.system(
             'grafana-server -config /etc/grafana/grafana.ini -homepath /opt/grafana')
@@ -74,10 +70,8 @@ class Grafana:
             is_running, _ = self.is_running()
 
         if not is_running:
-            try:
+            if self.container.node.client.nft.rule_exists(self.port):
                 self.container.node.client.nft.drop_port(self.port)
-            except RuntimeError:
-                pass
             raise RuntimeError('Failed to start grafana.')
 
     def add_data_source(self, database, name, ip, port, count):

@@ -9,7 +9,7 @@ type VdiskCreate struct {
 	ID                   string                   `yaml:"-" json:"id" validate:"nonzero,servicename"`
 	Blocksize            int                      `yaml:"blocksize" json:"blocksize" validate:"nonzero"`
 	ReadOnly             bool                     `yaml:"readOnly" json:"readOnly,omitempty"`
-	Size                 int                      `yaml:"size" json:"size" validate:"nonzero"`
+	Size                 int                      `yaml:"size" json:"size" validate:"nonzero,max=2048"`
 	Storagecluster       string                   `yaml:"storagecluster" json:"storagecluster" validate:"nonzero"`
 	Templatevdisk        string                   `yaml:"templatevdisk" json:"templatevdisk,omitempty"`
 	TlogStoragecluster   string                   `yaml:"tlogStoragecluster" json:"tlogStoragecluster,omitempty"`

@@ -1294,4 +1294,6 @@ GetGW:
       type: string
       description: id of the zerotier daemon
       required: false
-
+    status:
+      enum: [running, halted]
+      description: Status of the gateway

@@ -195,9 +195,9 @@ fi
 # create orchestrator service
 echo '#!/bin/bash -x' > ${orchinit}
 if [ -z "${ITSYOUONLINEORG}" ]; then
-    echo 'cmd="orchestratorapiserver --bind '"${PRIV}"':8080 --ays-url http://127.0.0.1:5000 --ays-repo orchestrator-server "' >> ${orchinit}
+    echo "cmd=\"orchestratorapiserver --bind '${PRIV}:8080' --ays-url http://127.0.0.1:5000 --ays-repo orchestrator-server\"" >> ${orchinit}
 else
-    echo 'cmd="orchestratorapiserver --bind '"${PRIV}"':8080 --ays-url http://127.0.0.1:5000 --ays-repo orchestrator-server --org '"${ITSYOUONLINEORG}"'"' >> ${orchinit}
+    echo "cmd=\"orchestratorapiserver --bind '${PRIV}:8080' --ays-url http://127.0.0.1:5000 --ays-repo orchestrator-server --org '${ITSYOUONLINEORG}'\"" >> ${orchinit}
 fi
 
 echo 'tmux new-session -d -s main -n 1 || true' >> ${orchinit}

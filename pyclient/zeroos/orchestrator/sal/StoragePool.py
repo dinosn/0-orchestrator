@@ -110,7 +110,7 @@ class StoragePool(Mountable):
                 disk = partition.disk
                 self._client.disk.rmpart(disk.name, 1)
                 if zero:
-                    self._client.system('dd if=/dev/zero bs=1M count=500 of={}'.format(diskpath)).get()
+                    self._client.bash('test -b /dev/{0} && dd if=/dev/zero bs=1M count=500 of=/dev/{0}'.format(diskpath)).get()
                 return True
         return False
 

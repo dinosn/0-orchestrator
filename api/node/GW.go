@@ -5,11 +5,12 @@ import (
 )
 
 type GetGW struct {
-	Domain         string        `json:"domain" validate:"nonzero"`
-	Httpproxies    []HTTPProxy   `json:"httpproxies,omitempty"`
-	Nics           []GWNIC       `json:"nics" validate:"nonzero"`
-	Portforwards   []PortForward `json:"portforwards,omitempty"`
-	ZerotierNodeId string        `json:"zerotiernodeid,omitempty"`
+	Domain         string            `json:"domain" validate:"nonzero"`
+	Httpproxies    []HTTPProxy       `json:"httpproxies,omitempty"`
+	Nics           []GWNIC           `json:"nics" validate:"nonzero"`
+	Portforwards   []PortForward     `json:"portforwards,omitempty"`
+	ZerotierNodeId string            `json:"zerotiernodeid,omitempty"`
+	Status         EnumGatewayStatus `json:"status" validate:"nonzero"`
 }
 
 type GW struct {

@@ -113,7 +113,8 @@ def start(job):
         stats_collector_service = get_stats_collector_from_node(node_service)
 
         if stats_collector_service:
-            j.tools.async.wrappers.sync(stats_collector_service.executeAction('stop', context=job.context))
+            if stats_collector_service.model.data.status == 'running':
+                j.tools.async.wrappers.sync(stats_collector_service.executeAction('stop', context=job.context))
             j.tools.async.wrappers.sync(stats_collector_service.executeAction('start', context=job.context))
 
 

@@ -160,6 +160,8 @@ def start(job):
 
     service = job.service
     container = service.producers.get('container')[0]
+    if str(container.model.data.status) == 'halted':
+        j.tools.async.wrappers.sync(container.executeAction('start', context=job.context))
 
     # setup zerotiers bridges
     containerobj = Container.from_ays(container, job.context['token'])

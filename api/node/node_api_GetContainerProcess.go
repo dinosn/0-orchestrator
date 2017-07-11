@@ -24,7 +24,7 @@ func (api NodeAPI) GetContainerProcess(w http.ResponseWriter, r *http.Request) {
 
 	pId, err := strconv.ParseUint(vars["processid"], 10, 64)
 	if err != nil {
-		tools.WriteError(w, http.StatusInternalServerError, err, "Error converting processid string into int")
+		tools.WriteError(w, http.StatusBadRequest, err, "Processid should be valid positive integer")
 		return
 	}
 
@@ -33,8 +33,14 @@ func (api NodeAPI) GetContainerProcess(w http.ResponseWriter, r *http.Request) {
 	process, err := core.Process(processID)
 
 	if err != nil {
-		errmsg := fmt.Sprintf("Error getting process %s info on container", processID)
-		tools.WriteError(w, http.StatusInternalServerError, err, errmsg)
+		if err == client.NotFound {
+			errmsg := fmt.Sprintf("No such process %d on container %s", pId, vars["containername"])
+			tools.WriteError(w, http.StatusNotFound, err, errmsg)
+
+		} else {
+			errmsg := fmt.Sprintf("Error getting process %s info on container", processID)
+			tools.WriteError(w, http.StatusInternalServerError, err, errmsg)
+		}
 		return
 	}
 

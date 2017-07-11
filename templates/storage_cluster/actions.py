@@ -209,17 +209,19 @@ def stop(job):
 def delete(job):
     service = job.service
     storageEngines = service.producers.get('storage_engine', [])
-    filesystems = service.producers.get('filesystem', [])
+    pools = service.producers.get('storagepool', [])
 
     for storageEngine in storageEngines:
+        tcps = storageEngine.producers.get('tcp', [])
+        for tcp in tcps:
+            j.tools.async.wrappers.sync(tcp.executeAction('drop', context=job.context))
+            j.tools.async.wrappers.sync(tcp.delete())
+
         container = storageEngine.parent
         j.tools.async.wrappers.sync(container.executeAction('stop', context=job.context))
         j.tools.async.wrappers.sync(container.delete())
 
-    for fs in filesystems:
-        if not fs.parent:
-            continue
-        pool = fs.parent
+    for pool in pools:
         j.tools.async.wrappers.sync(pool.executeAction('delete', context=job.context))
         j.tools.async.wrappers.sync(pool.delete())
 

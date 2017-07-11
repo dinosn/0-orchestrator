@@ -13,7 +13,7 @@ import (
 func KillProcess(pid string, cl client.Client, w http.ResponseWriter) {
 	pID, err := strconv.ParseUint(pid, 10, 64)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err, "Error converting pid string into int")
+		WriteError(w, http.StatusBadRequest, err, "Processid should be valid positive integer")
 		return
 	}
 

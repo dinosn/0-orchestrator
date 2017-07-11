@@ -5,7 +5,7 @@ import (
 )
 
 type VdiskResize struct {
-	NewSize int `yaml:"newSize" json:"newSize" validate:"nonzero"`
+	NewSize int `yaml:"newSize" json:"newSize" validate:"nonzero,max=2048"`
 }
 
 func (s VdiskResize) Validate() error {
