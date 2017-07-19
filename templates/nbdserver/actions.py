@@ -100,23 +100,17 @@ def install(job):
     container.client.filesystem.upload(configpath, configstream)
 
     if not is_job_running(container):
+        cmd = '/bin/nbdserver \
+            -protocol unix \
+            -address "{socketpath}" \
+            -config {config} \
+            '.format(socketpath=socketpath, config=configpath)
         if tlog:
             tlogservice = service.aysrepo.serviceGet(role='tlogserver', instance=vm.name)
             tlogip = tlogservice.model.data.bind.split(':')
-            cmd = '/bin/nbdserver \
-                -protocol unix \
-                -address "{socketpath}" \
-                -tlogrpc {tlogip}:{tlogport} \
-                -config {config}'.format(tlogip=tlogip[0], tlogport=tlogip[1], socketpath=socketpath, config=configpath)
-            print(cmd)
-            container.client.system(cmd)
-        else:
-            cmd = '/bin/nbdserver \
-                -protocol unix \
-                -address "{socketpath}" \
-                -config {config}'.format(socketpath=socketpath, config=configpath)
-            print(cmd)
-            container.client.system(cmd)
+            cmd += '-tlogrpc {tlogip}:{tlogport}'.format(tlogip=tlogip[0], tlogport=tlogip[1])
+        job.logger.info("Starting nbd server: %s" % cmd)
+        container.client.system(cmd, id="{}.{}".format(service.model.role, service.name))
 
         # wait for socket to be created
         start = time.time()
@@ -202,3 +196,10 @@ def monitor(job):
             j.tools.async.wrappers.sync(vdisk.executeAction('start'))
         else:
             j.tools.async.wrappers.sync(vdisk.executeAction('pause'))
+
+
+def watchdog_handler(job):
+    eof = job.model.args['eof']
+    service = job.service
+    if eof:
+        j.tools.async.wrappers.sync(service.executeAction('start', context=job.context))

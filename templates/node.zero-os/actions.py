@@ -84,8 +84,8 @@ def install(job):
     job.logger.info("mount storage pool for fuse cache")
     poolname = "{}_fscache".format(service.name)
     node.ensure_persistance(poolname)
-    
-    # Set host name 
+
+    # Set host name
     node.client.system("hostname %s" % service.model.data.hostname).get()
     node.client.bash("echo %s > /etc/hostname" % service.model.data.hostname).get()
 
@@ -165,7 +165,6 @@ def update_healthcheck(service, messages):
             service.model.data.healthchecks = list(service.model.data.healthchecks) + [message]
 
 
-
 def reboot(job):
     from zeroos.orchestrator.sal.Node import Node
     service = job.service
@@ -202,3 +201,39 @@ def uninstall(job):
     bootstraps = service.aysrepo.servicesFind(actor='bootstrap.zero-os')
     if bootstraps:
         j.tools.async.wrappers.sync(bootstraps[0].getJob('delete_node', args={'node_name': service.name}).execute())
+
+
+def watchdog(job):
+    from zeroos.orchestrator.sal.Pubsub import Pubsub
+    from zeroos.orchestrator.configuration import get_jwt_token
+    from asyncio import sleep
+
+    service = job.service
+    watched_roles = set([
+        "nbdserver",
+    ])
+
+    async def callback(jobid, level, message, flag):
+        if "." not in jobid:
+            return
+        role, instance = jobid.split(".")
+        if role not in watched_roles:
+            return
+
+        srv = service.aysrepo.serviceGet(role=role, instance=instance, die=False)
+        job.logger.info(srv)
+
+        if srv:
+            args = {"message": message, "eof": flag & 0x6 != 0}
+            job.context['token'] = get_jwt_token(job.service.aysrepo)
+            await srv.executeAction('watchdog_handler', context=job.context, args=args)
+
+    async def streaming(job):
+        while service.model.actionsState["install"] != "ok":
+            await sleep(1)
+        loop = j.atyourservice.server.loop
+
+        cl = Pubsub(loop, service.model.data.redisAddr)
+        queue = await cl.subscribe("ays.monitor")
+        await cl.global_stream(queue, callback)
+    return streaming(job)

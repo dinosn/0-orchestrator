@@ -9,3 +9,5 @@ recurring:
   - action: monitor
     log: true
     period: 30s
+longjobs:
+    - action: watchdog
