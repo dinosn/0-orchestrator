@@ -25,7 +25,7 @@ def install(job):
     container.client.filesystem.upload(configpath, configstream)
 
     cmd = '/bin/etcd --config-file %s' % configpath
-    container.client.system(cmd)
+    container.client.system(cmd, id="{}.{}".format(service.model.role, service.name))
 
     if not container.is_port_listening(int(service.model.data.serverBind.split(":")[1])):
         raise j.exceptions.RuntimeError('Failed to start etcd server: {}'.format(service.name))

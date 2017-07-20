@@ -72,7 +72,7 @@ class StorageEngine:
         logger.debug('start %s', self)
 
         self._configure()
-        self.container.client.system('/bin/ardb-server /etc/ardb.conf.used')
+        self.container.client.system('/bin/ardb-server /etc/ardb.conf.used', id="{}.{}".format("storage_engine", self.name))
 
         # wait for storageEngine to start
         start = time.time()

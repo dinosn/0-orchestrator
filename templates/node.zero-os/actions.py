@@ -207,33 +207,57 @@ def watchdog(job):
     from zeroos.orchestrator.sal.Pubsub import Pubsub
     from zeroos.orchestrator.configuration import get_jwt_token
     from asyncio import sleep
+    import asyncio
 
     service = job.service
-    watched_roles = set([
-        "nbdserver",
-    ])
+    watched_roles = {
+        "nbdserver": {
+            # "message": ["storageengine-failure"],  # TODO: Not implemented yet in 0-disk yet
+            "eof": True
+        },
+        "tlogserver": {
+            "eof": True,
+        }
+    }
 
     async def callback(jobid, level, message, flag):
         if "." not in jobid:
             return
-        role, instance = jobid.split(".")
+        role, instance = jobid.split(".", 1)
         if role not in watched_roles:
             return
 
-        srv = service.aysrepo.serviceGet(role=role, instance=instance, die=False)
-        job.logger.info(srv)
+        eof = flag & 0x6 != 0
+        matched_messages = watched_roles[role].get("message", None)
+        if not (matched_messages and message in matched_messages) and not (watched_roles[role]["eof"] and eof):
+            return
 
+        srv = service.aysrepo.serviceGet(role=role, instance=instance, die=False)
         if srv:
-            args = {"message": message, "eof": flag & 0x6 != 0}
+            args = {"message": message, "eof": eof}
             job.context['token'] = get_jwt_token(job.service.aysrepo)
             await srv.executeAction('watchdog_handler', context=job.context, args=args)
 
     async def streaming(job):
+        # Check if the node is runing
         while service.model.actionsState["install"] != "ok":
             await sleep(1)
-        loop = j.atyourservice.server.loop
 
+        while str(service.model.data.status) != "running":
+            await sleep(1)
+
+        # Add the looping here instead of the pubsub sal
+        loop = j.atyourservice.server.loop
         cl = Pubsub(loop, service.model.data.redisAddr)
-        queue = await cl.subscribe("ays.monitor")
-        await cl.global_stream(queue, callback)
+
+        while True:
+            if str(service.model.data.status) != "running":
+                await sleep(1)
+                continue
+            try:
+                queue = await cl.subscribe("ays.monitor")
+                await cl.global_stream(queue, callback)
+            except asyncio.TimeoutError as e:
+                cl = Pubsub(loop, service.model.data.redisAddr)
+
     return streaming(job)

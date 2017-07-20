@@ -5,6 +5,7 @@ import sys
 import uuid
 import time
 import logging
+import asyncio
 
 
 logger = logging.getLogger('g8core')
@@ -72,7 +73,7 @@ class Pubsub:
                                                   timeout=self.timeout)
         return self._redis
 
-    async def global_stream(self, queue, callback):
+    async def global_stream(self, queue, callback=None, timeout=120):
         async def default_callback(job_id, level, line, meta):
             w = sys.stdout if level == 1 else sys.stderr
             w.write(line)
@@ -83,18 +84,18 @@ class Pubsub:
         if not callable(callback):
             raise Exception('callback must be callable')
 
-        self._redis = await self.get()
-        # queue = "core:logs"
+        if self._redis.connection.closed:
+            self._redis = await self.get()
 
-        while True:
-            data = await self._redis.blpop(queue, 10)
-            a, body = data
-            payload = json.loads(body.decode())
-            message = payload['message']
-            line = message['message']
-            meta = message['meta']
-            job_id = payload['command']
-            await callback(job_id, meta >> 16, line, meta & 0xff)
+        data = await asyncio.wait_for(self._redis.blpop(queue, 10), timeout=timeout)
+
+        a, body = data
+        payload = json.loads(body.decode())
+        message = payload['message']
+        line = message['message']
+        meta = message['meta']
+        job_id = payload['command']
+        await callback(job_id, meta >> 16, line, meta & 0xff)
 
     async def raw(self, command, arguments, queue=None, max_time=None, stream=False, tags=None, id=None):
         if not id:

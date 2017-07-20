@@ -8,6 +8,7 @@ struct Schema {
     enum Status{
         halted @0;
         running @1;
+        halting @2;
     }
 
 }

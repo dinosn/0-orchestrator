@@ -168,7 +168,7 @@ def start(job):
     containerobj = Container.from_ays(container, job.context['token'])
     nics = service.model.data.to_dict()['nics']  # get dict version of nics
     # setup resolv.conf
-    containerobj.upload_content('/etc/resolv.conf', 'nameserver 127.0.0.1\n') 
+    containerobj.upload_content('/etc/resolv.conf', 'nameserver 127.0.0.1\n')
 
     def get_zerotier_nic(zerotierid):
         for zt in containerobj.client.zerotier.list():

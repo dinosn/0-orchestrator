@@ -95,7 +95,7 @@ def install(job):
                              log=logpath)
             if backup:
                 cmd += '-with-slave-sync'
-            container.client.system(cmd)
+            container.client.system(cmd, id="{}.{}".format(service.model.role, service.name))
             if not is_port_listening(container, port):
                 raise j.exceptions.RuntimeError('Failed to start tlogserver {}'.format(service.name))
             service.model.data.bind = '%s:%s' % (ip, port)
@@ -127,6 +127,7 @@ def get_storagecluster_config(job, storagecluster):
 def stop(job):
     import time
     service = job.service
+    service.model.data.status = 'halting'
     container = get_container(service, job.context['token'])
     bind = service.model.data.bind
     if bind:
@@ -163,3 +164,12 @@ def monitor(job):
         return
 
     j.tools.async.wrappers.sync(service.executeAction('start', context={"token": get_jwt_token(job.service.aysrepo)}))
+
+
+def watchdog_handler(job):
+    service = job.service
+    if str(service.model.data.status) != 'running':
+        return
+    eof = job.model.args['eof']
+    if eof:
+        j.tools.async.wrappers.sync(service.executeAction('start', context=job.context))

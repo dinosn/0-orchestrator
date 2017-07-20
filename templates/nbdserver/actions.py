@@ -134,6 +134,7 @@ def install(job):
         job = is_job_running(container)
         container.client.job.kill(job['cmd']['id'], signal=int(signal.SIGHUP))
     service.model.data.socketPath = socketpath
+    service.model.data.status = 'running'
     service.saveAll()
 
 
@@ -157,7 +158,7 @@ def stop(job):
 
     vm = service.consumers['vm'][0]
     vdisks = vm.producers.get('vdisk', [])
-
+    service.model.data.status = 'halting'
     # Delete tmp vdisks
     for vdiskservice in vdisks:
         j.tools.async.wrappers.sync(vdiskservice.executeAction('pause'))
@@ -176,6 +177,7 @@ def stop(job):
                 continue
             return
         raise j.exceptions.RuntimeError("nbdserver didn't stopped")
+    service.model.data.status = 'halted'
 
 
 def monitor(job):
@@ -199,6 +201,9 @@ def monitor(job):
 
 
 def watchdog_handler(job):
+    service = job.service
+    if str(service.model.data.status) != 'running':
+        return
     eof = job.model.args['eof']
     service = job.service
     if eof:
