@@ -173,15 +173,8 @@ def get_media_for_disk(medias, disk):
             return media
 
 
-def install(job):
-    import time
+def format_media_nics(job, medias):
     service = job.service
-
-    # get all path to the vdisks serve by the nbdservers
-    start_tlog(job)
-    medias = _start_nbd(job)
-
-    job.logger.info("create vm {}".format(service.name))
     node = get_node(job)
     nics = []
     for nic in service.model.data.nics:
@@ -193,12 +186,26 @@ def install(job):
             media = get_media_for_disk(medias, disk.to_dict())
             media['iotune'] = {'totaliopssec': disk.maxIOps,
                                'totaliopssecset': True}
+    return medias, nics
+
+def install(job):
+    import time
+    service = job.service
+    node = get_node(job)
+
+    # get all path to the vdisks serve by the nbdservers
+    start_tlog(job)
+    medias = _start_nbd(job)
+
+    job.logger.info("create vm {}".format(service.name))
+
+    media, nics = format_media_nics(job, medias)
 
     kvm = get_domain(job)
     if not kvm:
         node.client.kvm.create(
             service.name,
-            media=medias,
+            media=media,
             cpu=service.model.data.cpu,
             memory=service.model.data.memory,
             nics=nics,
@@ -481,14 +488,23 @@ def migrate(job):
     nbdserver.consume(vdisk_container)
     service.consume(nbdserver)
     service.consume(vdisk_container)
-    node_client = Node.from_ays(service.parent)._client
+    target_node_client = Node.from_ays(target_node, job.context['token'])._client
+    node_client = Node.from_ays(service.parent, job.context['token'])._client
     service.model.changeParent(target_node)
     service.saveAll()
-    _start_nbd(job, nbdserver.name)
+    medias = _start_nbd(job, nbdserver.name)
     service.model.data.status = 'running'
     for vm in node_client.kvm.list():
         if vm["name"] == service.name:
             uuid = vm["uuid"]
+            media, nics = format_media_nics(job, medias)
+            target_node_client.kvm.prepare_migration_target(
+                service.name,
+                media=media,
+                cpu=service.model.data.cpu,
+                memory=service.model.data.memory,
+                nics=nics,
+            )
             node_client.kvm.migrate(uuid, "qemu+ssh://%s:%s/system" % (target_node.model.data.redisAddr, ssh_port))
             break
 
@@ -625,7 +641,7 @@ def update_data(job, args):
             node = service.aysrepo.serviceGet('node', args['node'])
             service.model.changeParent(node)
             start_dependent_services(job)
-        elif service.model.data.status == 'running' : 
+        elif service.model.data.status == 'running': 
             # do live migration
             job = service.getJob('migrate', args={'node': service.model.data.node})
         else:
@@ -640,7 +656,6 @@ def processChange(job):
     from zeroos.orchestrator.configuration import get_jwt_token_from_job
     
     service = job.service
-    print(service.parent.name)
     args = job.model.args
     category = args.pop('changeCategory')
     if category == "dataschema" and service.model.actionsState['install'] == 'ok':

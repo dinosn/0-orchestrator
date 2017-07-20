@@ -1,7 +1,7 @@
 
-branch = $1
-zerotierid = $2
-zerotiertoken = $3
+branch=$1
+zerotierid=$2
+zerotiertoken=$3
 itsyouonlineorg=$ITSYOUONLINE_ORG
 
 export SSHKEYNAME=id_rsa
