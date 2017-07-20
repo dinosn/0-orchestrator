@@ -52,3 +52,7 @@ class HealthCheck:
                 'message': str(e)
             }
             return [healtcheck]
+    def calc_cpu_mem(self):
+        from .healthchecks.cpu_mem_core_check import action
+        results = action(self.node)
+        return results

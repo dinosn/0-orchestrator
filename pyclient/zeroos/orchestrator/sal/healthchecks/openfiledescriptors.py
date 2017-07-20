@@ -5,6 +5,7 @@ def main():
     messages = [{
         'id': 'openfiledescriptors',
         'name': 'openfiledescriptors',
+        'resource': 'System Load',
         'status': 'OK',
         'message': 'All openfilescriptors are ok'
     }]

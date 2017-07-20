@@ -84,8 +84,8 @@ def install(job):
     job.logger.info("mount storage pool for fuse cache")
     poolname = "{}_fscache".format(service.name)
     node.ensure_persistance(poolname)
-    
-    # Set host name 
+
+    # Set host name
     node.client.system("hostname %s" % service.model.data.hostname).get()
     node.client.bash("echo %s > /etc/hostname" % service.model.data.hostname).get()
 
@@ -148,6 +148,7 @@ def monitor(job):
     flist = config.get('healthcheck-flist', 'https://hub.gig.tech/deboeckj/js9container.flist')
     with node.healthcheck.with_container(flist) as cont:
         update_healthcheck(service, node.healthcheck.run(cont, 'openfiledescriptors'))
+    update_healthcheck(service, node.healthcheck.calc_cpu_mem())
 
     service.saveAll()
 
@@ -158,11 +159,22 @@ def update_healthcheck(service, messages):
         for health in service.model.data.healthchecks:
             if health.id == message['id']:
                 health.name = message['name']
+                health.resource = message['resource']
                 health.status = message['status']
                 health.message = message['message']
                 break
         else:
-            service.model.data.healthchecks = list(service.model.data.healthchecks) + [message]
+            healthchecks = []
+            for item in service.model.data.healthchecks:
+                healthcheck = {}
+                healthcheck['id'] = item.id
+                healthcheck['name'] = item.name
+                healthcheck['resource'] = item.resource
+                healthcheck['status'] = item.status
+                healthcheck['message'] = item.message
+                healthchecks.append(healthcheck)
+            healthchecks.append(message)
+            service.model.data.healthchecks = healthchecks
 
 
 
