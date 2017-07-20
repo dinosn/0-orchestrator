@@ -259,5 +259,8 @@ def watchdog(job):
                 await cl.global_stream(queue, callback)
             except asyncio.TimeoutError as e:
                 cl = Pubsub(loop, service.model.data.redisAddr)
+                monitor(job)
+            except OSError:
+                monitor(job)
 
     return streaming(job)
